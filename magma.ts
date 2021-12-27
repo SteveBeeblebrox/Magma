@@ -3,7 +3,7 @@ const tab = '\t'
 const test = String.raw`
 # Comment
 fn load:
-## javascript '\tgive @s apple'
+    ## javascript 'give @s apple'
 
 ##def FULL_STACK 64
 
@@ -46,7 +46,7 @@ function preprocess(text: string, spacesToTabs = 0): string[] {
         let $: RegExpExecArray | null;
         if($ = /^\s*?##\s*?(?:define|def)\s*?(?<macro>[A-Z_]+)(?: (?<value>(?:(?:(?<!\\)(?:\\{2})*\\\n)|[^\n])*))?/gm.exec(line))  macros.set($.groups!.macro, $.groups!.value?.replace(/\\(?=\n)/g, '')?.replaceAll(BACKSLASH.repeat(2), BACKSLASH) ?? '');
         else if($ = /^\s*?##\s*?un(?:define|def)\s*?(?<macro>[A-Z_]+)\s*?$/gm.exec(line))  macros.delete($.groups!.macro);
-        else if($ = /^\s*?##\s*?(?:js|javascript)\s*?(?<value>[\s\S]*)/gm.exec(line)) (eval($.groups?.value?.replace(/\\(?=\n)/g, '')?.replaceAll(BACKSLASH.repeat(2), BACKSLASH) ?? '') ?? '').toString().split(/\n/g).forEach((line: string)=>output.push(line));
+        else if($ = /^(?<whitespace>\s*?)##\s*?(?:js|javascript)\s*?(?<value>[\s\S]*)/gm.exec(line)) (eval($.groups?.value?.replace(/\\(?=\n)/g, '')?.replaceAll(BACKSLASH.repeat(2), BACKSLASH) ?? '') ?? '').toString().split(/\n/g).forEach((line: string)=>output.push($!.groups!.whitespace + line));
         else if($ = /^\s*?##\s*?if(?:def|defined)\s*?(?<macro>[A-Z_]+)\s*?$/gm.exec(line)) conditions.push(() => [...macros.keys()].includes($!.groups!.macro));
         else if($ = /^\s*?##\s*?ifun(?:def|defined)\s*?(?<macro>[A-Z_]+)\s*?$/gm.exec(line)) conditions.push(() => ![...macros.keys()].includes($!.groups!.macro));
         else if($ = /^\s*?##\s*?endif\s*?$/gm.exec(line)) conditions.pop();
