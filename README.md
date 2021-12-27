@@ -1,2 +1,7 @@
 # Magma
-A better way to write Minecraft functions
+A transpiler for Minecraft functions
+## Introduction
+
+## Macro Instructions
+
+## Execute Syntax
