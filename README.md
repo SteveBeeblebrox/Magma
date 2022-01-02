@@ -52,6 +52,7 @@ Scripting must be done inside of a function declaration. Input to Magma can cont
 ```bash
 fn on_tick:
   effect give @e glowing
+
 fn on_load:
   say Loading...
   
