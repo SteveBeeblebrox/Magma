@@ -48,6 +48,15 @@ fn demo:
   ## javascript 'axe,sword,shovel,pickaxe'.split(',').map(i => 'give @s diamond_' + i).join('\n')
 ```
 ## Function Syntax
+Scripting must be done inside of a function declaration. Input to Magma can contain more than one function to be parsed. Functions are defined at the top indentation level by using the `fn` keyword followed by the name of the function and a colon. All indented lines until the next function declaration or end of the file are considered part of this function. Function names must contain only `a-z0-9_`. Only comments and macro instructions may appear outside of functions. Functions may have blank lines inside of them to improve readability.
+```bash
+fn on_tick:
+  effect give @e glowing
+fn on_load:
+  say Loading...
+  
+  say Lorem Ipsum
+```
 ## Execute Syntax
 ## Comment Syntax
 Comments are the same as in a plain Minecraft function. Lines starting with a `#` are ignored.
