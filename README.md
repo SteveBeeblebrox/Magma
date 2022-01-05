@@ -59,7 +59,7 @@ fn on_load:
   say Lorem Ipsum
 ```
 ## Execute Syntax
-Magama makes it easier to write `execute` commands by providing a Python-like syntax for the command to reduce repetition and improve readability. Lines starting with either `align`, `anchored`, `as`, `at`, `facing`, `in`, `positioned`, `rotated`, `store`, `if`, or `unless` start an execute block. Execute blocks may be stacked. Each instruction in an execute block (indented one more level following it) will recieve all the prior execution blocks prepended to it as wellas the needed `execute` and `run` portions of the command. Magma will not prepend unneded/empty execute commands.
+Magama makes it easier to write `execute` commands by providing a Python-like syntax for the command to reduce repetition and improve readability. Lines starting with either `align`, `anchored`, `as`, `at`, `facing`, `in`, `positioned`, `rotated`, `store`, `if`, or `unless` start an execute block. Execute blocks may be stacked. Each instruction in an execute block (indented one more level following it) will receive all the prior execution blocks prepended to it as well as the needed `execute` and `run` portions of the command. Magma will not prepend unneeded/empty execute commands.
 
 ```bash
 fn load:
