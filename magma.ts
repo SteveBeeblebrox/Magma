@@ -22,6 +22,12 @@
  */
 
 namespace Magma {
+    
+    export enum Mode {
+        SCRIPT,
+        JSON
+    }
+
     export function transpile(text: string, {spacesToTabs = 0, macros = new Map<string, string>()}) {
         const
             BACKSLASH = '\\',
