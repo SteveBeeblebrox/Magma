@@ -1,7 +1,7 @@
 # Magma
 A transpiler for Minecraft functions
 ## Introduction
-
+Minecraft's built-in function system is powerful; however, the syntax can make it difficult to use. While it does not address issues like the lack of non-integer variables (yet, this features is in development), Magma scripts compile/transpile from a more user friendly, Python-like syntax into valid vanilla functions.
 ## Macro Instructions
 Magma has several different macro instructions to assist in generating code. Lines starting with `##` are treated as macro instructions. Unknown instructions throw an error.
 ### `define <name> [value]` or `def <name> [value]`
