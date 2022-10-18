@@ -28,14 +28,14 @@ namespace Magma {
         JSON
     }
 
-    export function transpile(text: string, {spacesToTabs = 0, macros = new Map<string, string>()}) {
+    export function transpile(text: string, {spacesToTabs = 0, macros = new Map<string, string>()} = {}, evalFunction: (x: string)=>any = eval) {
         const
             BACKSLASH = '\\',
             exports = new Map<string, string[]>(),
             instructions: string[] = ['execute'],
             conditions: {(): boolean}[] = [],
-            lines: string[] = [],
-            evalx = eval;
+            lines: string[] = []
+        ;
         
         let currentFunction: string | undefined;
 
@@ -49,7 +49,7 @@ namespace Magma {
             let $: RegExpExecArray | null;
             if($ = /^\s*?##\s*?(?:define|def)\s*?(?<macro>[A-Z_]+)(?: (?<value>(?:(?:(?<!\\)(?:\\{2})*\\\n)|[^\n])*))?/gm.exec(line))  macros.set($.groups!.macro, $.groups!.value?.replace(/\\(?=\n)/g, '')?.replaceAll(BACKSLASH.repeat(2), BACKSLASH) ?? '');
             else if($ = /^\s*?##\s*?un(?:define|def)\s*?(?<macro>[A-Z_]+)\s*?$/gm.exec(line))  macros.delete($.groups!.macro);
-            else if($ = /^(?<whitespace>\s*?)##\s*?(?:js|javascript)\s*?(?<value>[\s\S]*)/gm.exec(line)) (evalx($.groups?.value?.replace(/\\(?=\n)/g, '')?.replaceAll(BACKSLASH.repeat(2), BACKSLASH) ?? '') ?? '').toString().split(/\n/g).forEach((line: string)=>interpretLine($!.groups!.whitespace + line));
+            else if($ = /^(?<whitespace>\s*?)##\s*?(?:js|javascript)\s*?(?<value>[\s\S]*)/gm.exec(line)) (evalFunction($.groups?.value?.replace(/\\(?=\n)/g, '')?.replaceAll(BACKSLASH.repeat(2), BACKSLASH) ?? '') ?? '').toString().split(/\n/g).forEach((line: string)=>interpretLine($!.groups!.whitespace + line));
             else if($ = /^\s*?##\s*?if(?:def|defined)\s*?(?<macro>[A-Z_]+)\s*?$/gm.exec(line)) conditions.push(() => [...macros.keys()].includes($!.groups!.macro));
             else if($ = /^\s*?##\s*?ifun(?:def|defined)\s*?(?<macro>[A-Z_]+)\s*?$/gm.exec(line)) conditions.push(() => ![...macros.keys()].includes($!.groups!.macro));
             else if($ = /^\s*?##\s*?endif\s*?$/gm.exec(line)) conditions.pop();
