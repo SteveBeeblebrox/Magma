@@ -3,23 +3,23 @@ A transpiler for Minecraft functions
 ## Introduction
 Minecraft's built-in function system is powerful; however, the syntax can make it difficult to use. While it does not address issues like the lack of non-integer variables (yet, this features is in development), Magma scripts compile/transpile from a more user friendly, Python-like syntax into valid vanilla functions.
 ## Macro Instructions
-Magma has several different macro instructions to assist in generating code. Lines starting with `##` are treated as macro instructions. Unknown instructions throw an error.
+Magma has several different macro instructions to assist in generating code. Lines starting with `##` are treated as macro instructions. Unknown instructions throw an error. **Macros are not currently substituted in `fail`, `warn`, or `msg` instructions. This may change!**
 ### `define <name> [value]` or `def <name> [value]`
-The `define` macro instruction will replace any instances of `name` with `value`. If not given, `value` is an empty string. `name` must be composed of only the characters `A-Z_`.
+The `define` macro instruction will replace any instances of `name` with `value`. If not given, `value` is an empty string. `name` must be composed of only the characters `A-Z_`. When substituting macros, the name must be preceeded with a `$`. In all other cases, this part of the name is ignored and optional.
 ```bash
 ## define MATERIAL diamond
 fn demo:
-  give @s MATERIAL_sword
-  give @s MATERIAL_axe
+  give @s $MATERIAL_sword
+  give @s $MATERIAL_axe
 ```
 ### `undefine <name>` or `undef <name>`
 Prevents further replacement of `name`.
 ```bash
 ## define TEXT Hello World
 fn demo:
-  say TEXT
+  say $TEXT
 ## undefine TEXT
-  say Just the plain word TEXT
+  say Just the plain word $TEXT
 ```
 ### `ifdefined <name>` or `ifdef <name>`
 Outputs the following lines up until an `endif` macro instruction only if the given `name` is defined using the `define` macro instruction. `ifdefined` can be nested.
@@ -41,6 +41,28 @@ fn demo:
   summon area_effect_cloud ~ ~ ~ {}
 ## endif
 ```
+### `if <macro> <value>` or `if <macro> is <value>`
+Not yet documented
+### `if <macro> not <value>` or `if <macro> is not <value>`
+Not yet documented
+### `msg <message>` or `info <message>`
+Outputs a compile time info message. *How this is reported may varry by implementation.* Standard compiling continues.
+```bash
+fn demo:
+  ##info Not Yet Implemented
+```
+### `warn <message>` or `alert <message>`
+Outputs a compile time warning message. *How this is reported may varry by implementation.* Standard compiling continues.
+```bash
+fn demo:
+  ##warn Not Yet Implemented
+```
+### `fail <reason>` or `error <reason>` or `fail` or `error`
+Causes compilation to fail with an optional reason. *How this is reported may varry by implementation.*
+```bash
+fn demo:
+  ##fail Not Yet Implemented
+```
 ### `javascript <text>` or `js <text>`
 The `javascript` macro instruction evaluates the given text and includes the result in program. Each line output recieves the same indentation as the macro instruction.
 ```javascript
@@ -58,6 +80,10 @@ fn on_load:
   
   say Lorem Ipsum
 ```
+## Namesapces
+Not yet documented
+## Tag Binding
+Not yet documented
 ## Execute Syntax
 Magama makes it easier to write `execute` commands by providing a Python-like syntax for the command to reduce repetition and improve readability. Lines starting with either `align`, `anchored`, `as`, `at`, `facing`, `in`, `positioned`, `rotated`, `store`, `if`, or `unless` start an execute block. Execute blocks may be stacked. Each instruction in an execute block (indented one more level following it) will receive all the prior execution blocks prepended to it as well as the needed `execute` and `run` portions of the command. Magma will not prepend unneeded/empty execute commands.
 
@@ -71,3 +97,7 @@ fn load:
 ```
 ## Comment Syntax
 Comments are the same as in a plain Minecraft function. Lines starting with a `#` are ignored.
+## Planned Features
++ Expand macros in `fail`, `warn`, and `msg`
++ Loop unwinding
++ Make macros avalible to JavaScript macro instructions
