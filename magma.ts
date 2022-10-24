@@ -22,20 +22,16 @@
  */
 
 namespace Magma {
-    
-    export enum Mode {
-        SCRIPT,
-        JSON
-    }
-
-    export async function transpile(text: string, {spacesToTabs = 0, macros = new Map<string, string>()} = {}, evalFunction: (x: string)=>any = eval) {
+    export async function transpile(text: string, {spacesToTabs = 0, macros = new Map<string, string>(), warn = (message: string) => console.warn(message), info = (message: string) => console.log(message)} = {}, evalFunction: (x: string)=>any = eval) {
         const
             BACKSLASH = '\\',
             exports = new Map<string, string[]>(),
+            tags = new Map<string, string[]>(),
             instructions: string[] = ['execute'],
             conditions: {(): boolean}[] = [],
             lines: string[] = []
         ;
+        let defaultNamespace = 'minecraft';
         
         let currentFunction: string | undefined;
 
@@ -47,26 +43,36 @@ namespace Magma {
 
         for(const line of lines) {
             let $: RegExpExecArray | null;
-            if($ = /^\s*?##\s*?(?:define|def)\s*?(?<macro>[A-Z_]+)(?: (?<value>(?:(?:(?<!\\)(?:\\{2})*\\\n)|[^\n])*))?/gm.exec(line))  macros.set($.groups!.macro, $.groups!.value?.replace(/\\(?=\n)/g, '')?.replaceAll(BACKSLASH.repeat(2), BACKSLASH) ?? '');
-            else if($ = /^\s*?##\s*?un(?:define|def)\s*?(?<macro>[A-Z_]+)\s*?$/gm.exec(line))  macros.delete($.groups!.macro);
+            if($ = /^\s*?##\s*?(?:define|def)\s*?\$?(?<macro>[A-Z_]+)(?: (?<value>(?:(?:(?<!\\)(?:\\{2})*\\\n)|[^\n])*))?/gm.exec(line))  macros.set($.groups!.macro, $.groups!.value?.replace(/\\(?=\n)/g, '')?.replaceAll(BACKSLASH.repeat(2), BACKSLASH) ?? '');
+            else if($ = /^\s*?##\s*?un(?:define|def)\s*?\$?(?<macro>[A-Z_]+)\s*?$/gm.exec(line))  macros.delete($.groups!.macro);
             else if($ = /^(?<whitespace>\s*?)##\s*?(?:js|javascript)\s*?(?<value>[\s\S]*)/gm.exec(line)) (await evalFunction($.groups?.value?.replace(/\\(?=\n)/g, '')?.replaceAll(BACKSLASH.repeat(2), BACKSLASH) ?? '') ?? '').toString().split(/\n/g).forEach((line: string)=>interpretLine($!.groups!.whitespace + line));
-            else if($ = /^\s*?##\s*?if(?:def|defined)\s*?(?<macro>[A-Z_]+)\s*?$/gm.exec(line)) conditions.push(() => [...macros.keys()].includes($!.groups!.macro));
-            else if($ = /^\s*?##\s*?ifun(?:def|defined)\s*?(?<macro>[A-Z_]+)\s*?$/gm.exec(line)) conditions.push(() => ![...macros.keys()].includes($!.groups!.macro));
+            else if($ = /^\s*?##\s*?if(?:def|defined)\s*?\$?(?<macro>[A-Z_]+)\s*?$/gm.exec(line)) conditions.push(() => [...macros.keys()].includes($!.groups!.macro));
+            else if($ = /^\s*?##\s*?if\s*?\$?(?<macro>[A-Z_]+) (?:is )?(?<not>not )?(?<value>(?:(?:(?<!\\)(?:\\{2})*\\\n)|[^\n])*)\s*?$/gm.exec(line)) conditions.push(() => (!!$!.groups!.not) !== (macros.get($!.groups!.macro) === $!.groups!.value));
+            else if($ = /^\s*?##\s*?ifun(?:def|defined)\s*?\$?(?<macro>[A-Z_]+)\s*?$/gm.exec(line)) conditions.push(() => ![...macros.keys()].includes($!.groups!.macro));
             else if($ = /^\s*?##\s*?endif\s*?$/gm.exec(line)) conditions.pop();
+            else if($ = /^\s*?##\s*?(?:warn|alert) (?<value>(?:(?:(?<!\\)(?:\\{2})*\\\n)|[^\n])*)\s*?$/gm.exec(line)) warn($!.groups!.value)
+            else if($ = /^\s*?##\s*?(?:msg|info) (?<value>(?:(?:(?<!\\)(?:\\{2})*\\\n)|[^\n])*)\s*?$/gm.exec(line)) info($!.groups!.value)
+            else if($ = /^\s*?##\s*?(?:fail|error)(?: (?<value>(?:(?:(?<!\\)(?:\\{2})*\\\n)|[^\n])*))?\s*?$/gm.exec(line)) throw $!.groups!.value ?? 'fail macro called'
             else if($ = /^\s*?##[\s\S]*/gm.exec(line)) throw `Unexpected macro instruction "${$[0]}" on line ${lines.slice(0, lines.indexOf(line)).reduce((n, line) => n + line.split(/\n/g).length, 0)}`;
-            else if(conditions.every(c=>c())) interpretLine([...macros.entries()].reduce((line, [macro, value]) => line.replaceAll(macro,value), line).replace(/\\\n/g, '').replaceAll(BACKSLASH.repeat(2), BACKSLASH));
+            else if(conditions.every(c=>c())) interpretLine([...macros.entries()].reduce((line, [macro, value]) => line.replaceAll('$'+macro,value), line).replace(/\\\n/g, '').replaceAll(BACKSLASH.repeat(2), BACKSLASH));
         }
         
         function interpretLine(line: string) {
             let level = /^\t*/.exec(line)?.[0]?.length ?? 0, $: RegExpExecArray | null;
             if(/^(?:\s*$)|(\s*?#)/g.test(line)) return;
             else if(level === 0) {
-                if($ = /^fn (?<name>[a-z_]+):/.exec(line)) {
-                    currentFunction = $!.groups!.name;
+                if($ = /^fn (?:(?<namespace>[a-z_]+):)?(?<name>[a-z_]+)(?: on (?<tags>(?:(?:[a-z_]:)?[a-z_]+, ?)*(?:[a-z_]+)))?:\s*?$/.exec(line)) {
+                    currentFunction = ($!.groups!.namespace ?? defaultNamespace) + ':' + $!.groups!.name;
+                    for(const tag of ($!.groups!.tags ?? '').split(',').map(t=>t.trim())) {
+                        tags.set(tag, [...(tags.get(tag) ?? []), currentFunction!]);
+                    }
                     exports.set(currentFunction, []);
                     instructions.splice(1,instructions.length-1);
                 }
-                else throw `Indentation level ${level} may only contain function declarations.`;
+                else if($ = /^namespace (?<namespace>[a-z_]+)$/.exec(line)) {
+                    defaultNamespace = $!.groups!.namespace;
+                }
+                else throw `Indentation level ${level} may only contain function or namespace declarations.`;
             }
             else if(!currentFunction) throw 'Unexpected instruction before function declaration';
             else if($ = /^(?<tabs>\t*?)(?<what>(?:align|anchored|as|at|facing|in|positioned|rotated|store|if|unless)[\s\S]*):\s*?$/gm.exec(line)) {
@@ -79,6 +85,6 @@ namespace Magma {
             }
         }
 
-        return new Map<string, string>([...exports.entries()].map(([key,value])=>[key,value.join('\n')]));
+        return {functions: new Map<string, string>([...exports.entries()].map(([key,value])=>[key,value.join('\n')])), tags, defaultNamespace};
     }
 }
