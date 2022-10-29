@@ -41,9 +41,9 @@ fn demo:
   summon area_effect_cloud ~ ~ ~ {}
 ## endif
 ```
-### `if <macro> <value>` or `if <macro> is <value>`
+### `if <value1> = <value2>`
 Not yet documented
-### `if <macro> not <value>` or `if <macro> is not <value>`
+### `if <value1> != <value2>`
 Not yet documented
 ### `msg <message>` or `info <message>`
 Outputs a compile time info message. *How this is reported may varry by implementation.* Standard compiling continues.
