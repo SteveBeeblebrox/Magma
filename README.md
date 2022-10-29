@@ -3,7 +3,7 @@ A transpiler for Minecraft functions
 ## Introduction
 Minecraft's built-in function system is powerful; however, the syntax can make it difficult to use. While it does not address issues like the lack of non-integer variables (yet, this features is in development), Magma scripts compile/transpile from a more user friendly, Python-like syntax into valid vanilla functions.
 ## Macro Instructions
-Magma has several different macro instructions to assist in generating code. Lines starting with `##` are treated as macro instructions. Unknown instructions throw an error. **Macros are not currently substituted in `fail`, `warn`, or `msg` instructions. This may change!**
+Magma has several different macro instructions to assist in generating code. Lines starting with `##` are treated as macro instructions. Unknown instructions throw an error.
 ### `define <name> [value]` or `def <name> [value]`
 The `define` macro instruction will replace any instances of `name` with `value`. If not given, `value` is an empty string. `name` must be composed of only the characters `A-Z_`. When substituting macros, the name must be preceeded with a `$`. In all other cases, this part of the name is ignored and optional.
 ```bash
