@@ -63,7 +63,7 @@ namespace Magma {
             else if(level === 0) {
                 if($ = /^fn (?:(?<namespace>[a-z_]+):)?(?<name>[a-z_]+)(?: on (?<tags>(?:(?:[a-z_]:)?[a-z_]+, ?)*(?:[a-z_]+)))?:\s*?$/.exec(line)) {
                     currentFunction = ($!.groups!.namespace ?? defaultNamespace) + ':' + $!.groups!.name;
-                    for(const tag of ($!.groups!.tags ?? '').split(',').map(t=>t.trim())) {
+                    for(const tag of ($!.groups!.tags ?? '').split(',').map(t=>t.trim()).filter(t=>t)) {
                         tags.set(tag, [...(tags.get(tag) ?? []), currentFunction!]);
                     }
                     exports.set(currentFunction, []);
