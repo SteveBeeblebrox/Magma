@@ -80,7 +80,7 @@ fn on_load:
   
   say Lorem Ipsum
 ```
-## Namesapces
+## Namespaces
 Not yet documented
 ## Tag Binding
 Not yet documented
