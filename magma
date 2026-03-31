@@ -17,11 +17,22 @@ def error(message: str, pos: int | None = None):
 def debug(message: str, pos: int | None = None):
     print('\033[96;1m[DEBUG]:\033[0m', message, f'''({source}:{pos})''' if pos else f'''({source})''', file=stderr)
 
+#TODO NBT macros/parameters/variables, return, namespaced functions, tag gen
+
+def getlines(file):
+    iter = enumerate(file, 1)
+    while True:
+        pos, line = next(iter, (None, None))
+        if line is None:
+            break
+        while line.rstrip('\r\n').endswith('\\'):
+            line = line.rstrip('\r\n')[:-1] + next(iter, (None, ''))[1].lstrip()
+        yield pos, line
 
 with open(source) as file:
     fnname = None
     modifiers = []
-    for pos, line in enumerate(file, 1):
+    for pos, line in getlines(file):
         def indent(indentation):
             level = sum(TAB_SIZE if c == '\t' else 1 for c in indentation)
             if -(-level//TAB_SIZE) > len(modifiers) + 1:
@@ -40,7 +51,6 @@ with open(source) as file:
                 print(f'''\033[93;1m[{match.group('what').upper()}]:\033[0m''', match.group('message'), f'''({source}:{pos})''', file=stderr)
 
         elif match := regex.search(r'^fn(?:\s*?\[\[(?P<attributes>[^\]]*?)\]\])?\s+?(?P<name>[a-zA-Z_]+?)\s*?:\s*?$', line):
-            # TODO, allow slash paths in name?
             fnname = match.group('name').lower()
             attributes = [attr.strip() for attr in (match.group('attributes') or '').split(',')]
 
@@ -85,8 +95,8 @@ with open(source) as file:
                 *([] if line.strip() == 'pass' else ['run', line.strip()])
             ]) if modifiers else line.strip())
 print()
-for fnname, function in functions.items():
-    print(f'''### {fnname}.mcfunction [[{', '.join(function[1])}]] ({source}:{function[2]}) ###''')
-    for line in function[0]:
+for fnname, (lines, attrs, pos) in functions.items():
+    print(f'''### {fnname}.mcfunction [[{', '.join(attrs)}]] ({source}:{pos}) ###''')
+    for line in lines:
         print(line)
     print()
