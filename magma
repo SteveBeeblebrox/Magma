@@ -4,6 +4,7 @@ import re as regex
 from sys import stderr
 
 TAB_SIZE = 4
+ENABLE_MACRO = True
 
 functions = {}
 
@@ -17,7 +18,66 @@ def error(message: str, pos: int | None = None):
 def debug(message: str, pos: int | None = None):
     print('\033[96;1m[DEBUG]:\033[0m', message, f'''({source}:{pos})''' if pos else f'''({source})''', file=stderr)
 
-#TODO NBT macros/parameters/variables, return, namespaced functions, tag gen
+#TODO NBT macros/parameters/variables, namespaced functions, tag gen
+# TODO summon needs to generate new synthetic function
+# TODO general purpose synthetic functions for bouncing like bedrock?
+
+
+'''
+Related vanilla syntax
+
+    return <int>
+    return fail
+    return run <command>
+
+
+# parameter declaration is purely visual sort of like bash
+fn[[]] foo(a,b,c):
+    say $(a)
+    fork:
+        say hi
+    fork with {d:12}:
+        say $(d)
+        # looses access to a,b,c
+    fork with entity @s Data:
+        say $(foo)
+        return
+        # Note: this return exits the with block not foo()
+    fork as summon minecraft:creeper with {a:$(a)}:
+        say hi, a is still $(a)
+
+
+    fork [with {...}] as [summon] creeper
+    fork [as [summon] creeper] [with ...]
+
+    fork({d:12}):
+        ...
+    fork(entity @s Data):
+        ...
+    fork(block 0 0 0):
+        ...
+    fork as creeper:
+        ...
+        
+
+fn test:
+    foo(1,2,3)
+    function foo {a:1,b:2,c:3}
+    function foo with block 0 0 0
+    foo with block 0 0 0
+
+    foo(block 0 0 0)
+    foo(entity @e[...,limit=1])
+    foo(storage ...)
+    foo(a=1,b=2)
+    foo({a:1,b:2})
+
+    return foo(1)
+    return run function foo with {a:1}
+
+    return foo({a:1})
+    return foo([with] block 0 0 0 Data)
+'''
 
 def getlines(file):
     iter = enumerate(file, 1)
@@ -71,9 +131,7 @@ with open(source) as file:
 
             modifiers = indent(match.group('indent'))
 
-            # TODO summon needs to generate new synthetic function
-            # TODO general purpose synthetic functions for bouncing like bedrock?
-            if match.group('modifier') in ['summon', '__synth__']:
+            if match.group('modifier') in ['summon', 'fork']:
                 error(f'''Support for modifier \'{match.group('modifier')}\' not yet complete''', pos)
             
             if not match.group('modifier') in ['align', 'anchored', 'as', 'at', 'facing', 'in', 'on', 'positioned', 'rotated', 'store', 'if', 'unless', 'run']:
