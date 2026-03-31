@@ -1,0 +1,92 @@
+#!/usr/bin/env python
+
+import re as regex
+from sys import stderr
+
+TAB_SIZE = 4
+
+functions = {}
+
+source = 'test.mcfd'
+
+def warn(message: str, pos: int | None = None):
+    print('\033[93;1m[WARNING]:\033[0m', message, f'''({source}:{pos})''' if pos else f'''({source})''', file=stderr)
+def error(message: str, pos: int | None = None):
+    print('\033[91;1m[ERROR]:\033[0m', message, f'''({source}:{pos})''' if pos else f'''({source})''', file=stderr)
+    exit(1)
+def debug(message: str, pos: int | None = None):
+    print('\033[96;1m[DEBUG]:\033[0m', message, f'''({source}:{pos})''' if pos else f'''({source})''', file=stderr)
+
+
+with open(source) as file:
+    fnname = None
+    modifiers = []
+    for pos, line in enumerate(file, 1):
+        def indent(indentation):
+            level = sum(TAB_SIZE if c == '\t' else 1 for c in indentation)
+            if -(-level//TAB_SIZE) > len(modifiers) + 1:
+                error(f'''Unexpected indentation, got {level//TAB_SIZE} expected {len(modifiers) + 1}''', pos)
+            return modifiers[:-(-level//TAB_SIZE) - 1]            
+
+        match = None
+        if not line.strip():
+            if fnname is not None:
+                functions[fnname][0].append('')
+        elif match := regex.search(r'^\s*?#(?P<comment>[\s\S]*?)\s*?$', line):
+            if fnname is not None:
+                functions[fnname][0].append(f'''#{match.group('comment')}''')
+
+            if match := regex.match(r'(?i)^\s*?(?P<what>todo|fixme|warn)\s*?:?\s*?(?P<message>[\s\S]*?)\s*?$', match.group('comment')):
+                print(f'''\033[93;1m[{match.group('what').upper()}]:\033[0m''', match.group('message'), f'''({source}:{pos})''', file=stderr)
+
+        elif match := regex.search(r'^fn(?:\s*?\[\[(?P<attributes>[^\]]*?)\]\])?\s+?(?P<name>[a-zA-Z_]+?)\s*?:\s*?$', line):
+            # TODO, allow slash paths in name?
+            fnname = match.group('name').lower()
+            attributes = [attr.strip() for attr in (match.group('attributes') or '').split(',')]
+
+            if fnname != match.group('name'):
+                warn(f'''Converting function name \'{fnname}\' to lowercase!''', pos)
+
+            if match.group('name').lower() in functions:
+                error(f'''Duplicate function \'{fnname}\'''', pos)
+
+            debug(f'''Found function \'{fnname}\' [[{', '.join(attributes)}]]''', pos)
+
+            functions[fnname] = ([], attributes, pos)
+            modifiers.clear()
+
+        elif match := regex.search(r'^(?P<indent>\s*?)(?P<modifier>[a-z_]+)\s*(?P<args>(?:(?<=\s)[\s\S]*?)?)\s*?:\s*?$', line):
+            if fnname is None:
+                error(f'''Unexpected modifier \'{match.group('modifier')}\'''', pos)
+
+            modifiers = indent(match.group('indent'))
+
+            # TODO summon needs to generate new synthetic function
+            # TODO general purpose synthetic functions for bouncing like bedrock?
+            if match.group('modifier') in ['summon', '__synth__']:
+                error(f'''Support for modifier \'{match.group('modifier')}\' not yet complete''', pos)
+            
+            if not match.group('modifier') in ['align', 'anchored', 'as', 'at', 'facing', 'in', 'on', 'positioned', 'rotated', 'store', 'if', 'unless', 'run']:
+                error(f'''Unknown modifier \'{match.group('modifier')}\'''', pos) 
+
+            if match.group('modifier') in ['run'] and match.group('args').strip():
+                    error(f'''Modifier \'{match.group('modifier')}\' must not have any args''', pos)
+
+            modifiers.append((match.group('modifier'), match.group('args')))
+        else:
+            if fnname is None:
+                error(f'''Unexpected command''', pos)
+
+            modifiers = indent(line[:len(line) - len(line.lstrip())])
+
+            functions[fnname][0].append(' '.join([
+                'execute',
+                *(f'''{modifier} {args}''' for modifier,args in modifiers if modifier != 'run'),
+                *([] if line.strip() == 'pass' else ['run', line.strip()])
+            ]) if modifiers else line.strip())
+print()
+for fnname, function in functions.items():
+    print(f'''### {fnname}.mcfunction [[{', '.join(function[1])}]] ({source}:{function[2]}) ###''')
+    for line in function[0]:
+        print(line)
+    print()
